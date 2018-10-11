@@ -8,7 +8,7 @@ outfile = sys.argv[2]
 # 12 months
 hour = 2
 #feat = range(18)
-feat = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13 , 14, 15, 16, 17]
+feat = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 16, 17]
 
 
 W = np.load('model.npy')

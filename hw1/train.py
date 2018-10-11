@@ -51,14 +51,30 @@ A = []
 # 12 months
 hour = 2
 #feat = range(18)
-feat = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13 , 14, 15, 16, 17]
+feat = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13 , 16, 17]
 
 for i in range(12):
 	# 24*20-9 = 471 hours
 	for j in range(480-hour):
-		tmp = [1] + [proc_data[m][n] for m in feat for n in range(i*480+j, i*480+j+hour)]
-		A.append(tmp)
-		y.append(proc_data[9][i*480+j+hour])
+		all_zero = True
+		for k in range(hour+1):
+			for l in range(18):
+				if proc_data[l][i*480+j+k]:
+					is_zero = False
+					break
+		
+		for k in range(hour+1):
+			if (proc_data[9][i*480+j+k] > float(120)):
+				proc_data[9][i*480+j+k] = float(120)
+
+			if (proc_data[8][i*480+j+k] > float(120)):
+				proc_data[8][i*480+j+k] = float(120)
+				
+		
+		if not is_zero:
+			tmp = [1] + [proc_data[m][n] for m in feat for n in range(i*480+j, i*480+j+hour)]
+			A.append(tmp)
+			y.append(proc_data[9][i*480+j+hour])
 
 
 
