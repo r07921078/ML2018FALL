@@ -45,7 +45,7 @@ def f1(y_true, y_pred):
 class data_generator:
     
     def create_train(dataset_info, batch_size, shape, augument=True):
-        assert shape[2] == 3
+        #assert shape[2] == 3
         while True:
             random_indexes = np.random.choice(len(dataset_info), batch_size)
             batch_images = np.empty((batch_size, shape[0], shape[1], shape[2]))
@@ -66,10 +66,11 @@ class data_generator:
         B = np.array(Image.open(path+'_blue.png'))
         Y = np.array(Image.open(path+'_yellow.png'))
 
-        image = np.stack((
-            R/2 + Y/2, 
-            G/2 + Y/2, 
-            B),-1)
+        #image = np.stack((
+        #    R/2 + Y/2, 
+        #    G/2 + Y/2, 
+        #    B),-1)
+        image = np.stack((R,G,B,Y),-1)
         
         image = cv2.resize(image, (shape[0], shape[1]))
         image = np.divide(image, 255)
@@ -91,14 +92,16 @@ class data_generator:
         return image_aug
     
     
-INPUT_SHAPE = (299,299,3)
+INPUT_SHAPE = (299,299,4)
 
 model = load_model('model1.h5', custom_objects={'f1': f1})
 
 submit = pd.read_csv('sample_submission.csv')
 
 
+MM = np.zeros((submit.shape[0],28))
 predicted = []
+cc = 0
 for name in tqdm(submit['Id']):
     path = os.path.join('test/', name)
     image = data_generator.load_image(path, INPUT_SHAPE)
@@ -106,7 +109,10 @@ for name in tqdm(submit['Id']):
     label_predict = np.arange(28)[score_predict>=0.2]
     str_predict_label = ' '.join(str(l) for l in label_predict)
     predicted.append(str_predict_label)
-    
+    MM[cc,:] = score_predict
+    cc += 1
+
 submit['Predicted'] = predicted
 submit.to_csv('submission.csv', index=False)
+np.savetxt("Test_score",MM)
 
