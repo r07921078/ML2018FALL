@@ -6,11 +6,12 @@ from PIL import Image
 import cv2
 from imgaug import augmenters as iaa
 from tqdm import tqdm
+#from itertools import product
 
 import warnings
 warnings.filterwarnings("ignore")
 
-INPUT_SHAPE = (299,299,3)
+INPUT_SHAPE = (299,299,4)
 BATCH_SIZE = 10
 
 
@@ -54,10 +55,11 @@ class data_generator:
         B = np.array(Image.open(path+'_blue.png'))
         Y = np.array(Image.open(path+'_yellow.png'))
 
-        image = np.stack((
-            R/2 + Y/2, 
-            G/2 + Y/2, 
-            B),-1)
+        #image = np.stack((
+        #    R/2 + Y/2, 
+        #    G/2 + Y/2, 
+        #    B),-1)
+        image = np.stack((R,G,B,Y),-1)
         
         image = cv2.resize(image, (shape[0], shape[1]))
         image = np.divide(image, 255)
@@ -124,8 +126,9 @@ def create_model(input_shape, n_out):
         input_shape=input_shape)    
     
     input_tensor = Input(shape=input_shape)
-    bn = BatchNormalization()(input_tensor)
-    x = pretrain_model(bn)
+    x = BatchNormalization()(input_tensor)
+    x = Conv2D(3, kernel_size=(1,1), activation='relu',input_shape=input_shape)(x)
+    x = pretrain_model(x)
     x = Conv2D(128, kernel_size=(1,1), activation='relu')(x)
     x = Flatten()(x)
     x = Dropout(0.5)(x)
@@ -163,38 +166,17 @@ def show_history(history):
     ax[0].legend()
     ax[1].legend()
     ax[2].legend()
-    
+    plt.savefig('History.png')
+
     
 keras.backend.clear_session()
 
 model = create_model(
-    input_shape=(299,299,3), 
+    input_shape=INPUT_SHAPE, 
     n_out=28)
 
 model.summary()    
     
-
-train_generator = data_generator.create_train(
-    train_dataset_info[train_ids.index], BATCH_SIZE, INPUT_SHAPE, augument=False)
-validation_generator = data_generator.create_train(
-    train_dataset_info[test_ids.index], 256, INPUT_SHAPE, augument=False)
-
-model.layers[2].trainable = False
-
-model.compile(
-    loss='binary_crossentropy',  
-    optimizer=Adam(1e-3),
-    metrics=['acc', f1])
-
-history = model.fit_generator(
-    train_generator,
-    steps_per_epoch=100,
-    validation_data=next(validation_generator),
-    epochs=15, 
-    verbose=1)
-
-show_history(history)
-
 
 train_generator = data_generator.create_train(
     train_dataset_info[train_ids.index], BATCH_SIZE, INPUT_SHAPE, augument=True)
