@@ -34,7 +34,7 @@ train_ids, test_ids, train_targets, test_target = train_test_split(
 class data_generator:
     
     def create_train(dataset_info, batch_size, shape, augument=True):
-        assert shape[2] == 3
+        #assert shape[2] == 3
         while True:
             random_indexes = np.random.choice(len(dataset_info), batch_size)
             batch_images = np.empty((batch_size, shape[0], shape[1], shape[2]))
