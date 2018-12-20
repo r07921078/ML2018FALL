@@ -71,7 +71,7 @@ class data_generator:
         #    G/2 + Y/2, 
         #    B),-1)
         image = np.stack((R,G,B,Y),-1)
-        
+
         image = cv2.resize(image, (shape[0], shape[1]))
         image = np.divide(image, 255)
         return image  
@@ -91,28 +91,30 @@ class data_generator:
         image_aug = augment_img.augment_image(image)
         return image_aug
     
-    
+PATH_to_SUBMISSION='/mnt/e/ML_dataset/final/sample_submission.csv'
+PATH_to_Test='/mnt/e/ML_dataset/final/Test'
+
 INPUT_SHAPE = (299,299,4)
+thred = np.load('thredshold.npy')
 
 model = load_model('model1.h5', custom_objects={'f1': f1})
 
-submit = pd.read_csv('sample_submission.csv')
-
+submit = pd.read_csv(PATH_to_SUBMISSION)
 
 MM = np.zeros((submit.shape[0],28))
 predicted = []
 cc = 0
 for name in tqdm(submit['Id']):
-    path = os.path.join('test/', name)
+    path = os.path.join(PATH_to_Test, name)
     image = data_generator.load_image(path, INPUT_SHAPE)
     score_predict = model.predict(image[np.newaxis])[0]
-    label_predict = np.arange(28)[score_predict>=0.2]
-    str_predict_label = ' '.join(str(l) for l in label_predict)
+    label_predict = np.argwhere(score_predict>thred)
+    #label_predict = np.arange(28)[score_predict>=0.2]
+    str_predict_label = ' '.join(str(l) for l in label_predict.tolist())
     predicted.append(str_predict_label)
     MM[cc,:] = score_predict
     cc += 1
-
+    
 submit['Predicted'] = predicted
 submit.to_csv('submission.csv', index=False)
 np.savetxt("Test_score",MM)
-
