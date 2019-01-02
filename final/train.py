@@ -15,8 +15,8 @@ INPUT_SHAPE = (299,299,4)
 BATCH_SIZE = 10
 
 
-path_to_train = 'train/'
-data = pd.read_csv('train.csv')
+path_to_train = sys.argv[1] #'/mnt/e/ML_dataset/final/Train'
+PATH_to_TRAINCSV=sys.argv[2] #"/mnt/e/ML_dataset/final/train.csv"
 
 train_dataset_info = []
 for name, labels in zip(data['Id'], data['Target'].str.split(' ')):
@@ -81,22 +81,6 @@ class data_generator:
         return image_aug
     
     
-    
-    
-# create train datagen
-train_datagen = data_generator.create_train(
-    train_dataset_info, 5, (299,299,3), augument=True)
-
-
-images, labels = next(train_datagen)
-
-fig, ax = plt.subplots(1,5,figsize=(25,5))
-for i in range(5):
-    ax[i].imshow(images[i])
-print('min: {0}, max: {1}'.format(images.min(), images.max()))
-
-
-
 
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential, load_model
@@ -119,7 +103,16 @@ import tensorflow as tf
 import keras
 
 def create_model(input_shape, n_out):
-    
+    '''
+    pretrain_model = resnet50.ResNet50(
+        include_top=False,
+        weights='imagenet',
+        input_tensor=None,
+        input_shape=(299, 299, 3),
+        pooling='avg',
+        classes=None)
+    '''
+
     pretrain_model = InceptionResNetV2(
         include_top=False, 
         weights='imagenet', 
@@ -131,9 +124,9 @@ def create_model(input_shape, n_out):
     x = pretrain_model(x)
     x = Conv2D(128, kernel_size=(1,1), activation='relu')(x)
     x = Flatten()(x)
-    x = Dropout(0.5)(x)
+    x = Dropout(0.25)(x)
     x = Dense(512, activation='relu')(x)
-    x = Dropout(0.5)(x)
+    x = Dropout(0.25)(x)
     output = Dense(n_out, activation='sigmoid')(x)
     model = Model(input_tensor, output)
     
@@ -183,24 +176,31 @@ train_generator = data_generator.create_train(
 validation_generator = data_generator.create_train(
     train_dataset_info[test_ids.index], 256, INPUT_SHAPE, augument=False)
 
-model.layers[2].trainable = True
+model.layers[3].trainable = True
 
 model.compile(
     loss='binary_crossentropy',  
     optimizer=Adam(1e-4),
     metrics=['acc', f1])
 
+check  = ModelCheckpoint(sys.argv[3],
+    monitor='val_f1',
+    save_best_only=True,
+    mode = 'max')
+#"/mnt/e/ML_dataset/final/myModel.h5"
 history = model.fit_generator(
     train_generator,
     steps_per_epoch=100,
     validation_data=next(validation_generator),
-    epochs=180, 
-    verbose=1)
+    epochs=300, 
+    verbose=1,
+    callbacks=[check],
+    )
 
 show_history(history)
 
 
-model.save('model1.h5')
+#model.save('model1.h5')
 
 
 

@@ -91,13 +91,13 @@ class data_generator:
         image_aug = augment_img.augment_image(image)
         return image_aug
     
-PATH_to_SUBMISSION='/mnt/e/ML_dataset/final/sample_submission.csv'
-PATH_to_Test='/mnt/e/ML_dataset/final/Test'
+PATH_to_SUBMISSION=sys.argv[2]#'/mnt/e/ML_dataset/final/sample_submission.csv'
+PATH_to_Test=sys.argv[1]#'/mnt/e/ML_dataset/final/Test'
 
 INPUT_SHAPE = (299,299,4)
 thred = np.load('thredshold.npy')
 
-model = load_model('model1.h5', custom_objects={'f1': f1})
+model = load_model(sys.argv[3], custom_objects={'f1': f1})
 
 submit = pd.read_csv(PATH_to_SUBMISSION)
 
@@ -117,4 +117,4 @@ for name in tqdm(submit['Id']):
     
 submit['Predicted'] = predicted
 submit.to_csv('submission.csv', index=False)
-np.savetxt("Test_score",MM)
+#np.savetxt("Test_score",MM)

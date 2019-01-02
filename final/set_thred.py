@@ -157,13 +157,13 @@ class GetThreshold():
 
 
 def main():
-    PATH_to_TRAINCSV="/mnt/e/ML_dataset/final/train.csv"
-    PATH_to_TRAIN="/mnt/e/ML_dataset/final/Train"
+    PATH_to_TRAINCSV=sys.argv[2]
+    PATH_to_TRAIN=sys.argv[1]
     
-    GS = GetThreshold(None)#"model1.h5")
+    GS = GetThreshold(sys.argv[3])
     GS.GetY(PATH_to_TRAINCSV)
-    #GS.GetScore(Train_path= PATH_to_TRAIN,
-    #    save_name = "Train_score")
+    GS.GetScore(Train_path= PATH_to_TRAIN,
+        save_name = "Train_score")
     GS.LoadScore("Train_score")
     GS.EstimateThred(lr = 0.001,save_name = 'thredshold')
 
