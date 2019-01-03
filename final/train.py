@@ -18,6 +18,8 @@ BATCH_SIZE = 10
 path_to_train = sys.argv[1] #'/mnt/e/ML_dataset/final/Train'
 PATH_to_TRAINCSV=sys.argv[2] #"/mnt/e/ML_dataset/final/train.csv"
 
+data = pd.read_csv(PATH_to_TRAINCSV)
+
 train_dataset_info = []
 for name, labels in zip(data['Id'], data['Target'].str.split(' ')):
     train_dataset_info.append({
