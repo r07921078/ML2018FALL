@@ -118,7 +118,7 @@ def create_model(input_shape, n_out):
     pretrain_model = InceptionResNetV2(
         include_top=False, 
         weights='imagenet', 
-        input_shape=input_shape)    
+        input_shape=(299, 299, 3))    
     
     input_tensor = Input(shape=input_shape)
     x = BatchNormalization()(input_tensor)
