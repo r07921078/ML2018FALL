@@ -110,7 +110,9 @@ for name in tqdm(submit['Id']):
     score_predict = model.predict(image[np.newaxis])[0]
     label_predict = np.argwhere(score_predict>thred)
     #label_predict = np.arange(28)[score_predict>=0.2]
-    str_predict_label = ' '.join(str(l) for l in label_predict.tolist())
+    #print(label_predict)
+    str_predict_label = ' '.join(str(l[0]) for l in label_predict)
+    #print(str_predict_label)
     predicted.append(str_predict_label)
     MM[cc,:] = score_predict
     cc += 1
