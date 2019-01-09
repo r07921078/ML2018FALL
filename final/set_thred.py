@@ -85,18 +85,29 @@ class data_generator:
 
 class GetThreshold():
 
-    def __init__(self, model_name):
-        if model_name is not None:
-            self.model = load_model(model_name, custom_objects={'f1': GetThreshold.f1})
+    def __init__(self):
+        pass
 
-    def GetY(self,csvpath,n_class=28):
+    def loadModel(self,model_name):
+        loss_fun = GetThreshold.get_weighted_loss(self.ClassWeight)
+        if model_name is not None:
+            self.model = load_model(model_name, custom_objects={'f1': GetThreshold.f1,
+                 'weighted_loss': loss_fun})
+
+    def GetY(self,csvpath, TEST=True, n_class=28):
         self.DA = pd.read_csv(csvpath)
-        pre_Y = self.DA['Target'].str.split().tolist()
-        Y = np.zeros((len(pre_Y),n_class))
-        for cc,target in enumerate(pre_Y):
-            target = [int(i) for i in target]
-            Y[cc,target] = 1
-        self.Y = Y
+        if not TEST:
+            pre_Y = self.DA['Target'].str.split().tolist()
+            Y = np.zeros((len(pre_Y),n_class))
+            for cc,target in enumerate(pre_Y):
+                target = [int(i) for i in target]
+                Y[cc,target] = 1
+            class_num = np.sum(Y,0)
+            class_portion = class_num/np.sum(class_num)
+            self.Y = Y
+            self.ClassWeight = -1*np.log2(class_portion)
+        else:
+            self.ClassWeight = np.zeros(n_class)
 
     def GetScore(self, Train_path, INPUT_SHAPE = (299,299,4), save_name = None):
         MM = np.zeros((self.DA.shape[0],28))
@@ -112,8 +123,18 @@ class GetThreshold():
         if save_name is not None:
             np.savetxt(save_name,MM)
 
-    def LoadScore(self,save_name):
-        self.Score = np.loadtxt(save_name)
+    #def GetFastaiScore(self,Train_path, Model_path, INPUT_SHAPE = (299,299,4), save_name = None):
+
+    def LoadScore(self,save_name,weight=None):
+        if weight is None:
+            weight = [ 1 for i in range(len(save_name)) ]
+        Score = []
+        cc = 0
+        for ff in save_name:
+            Score.append(np.loadtxt(ff)*weight[cc])
+            cc += 1
+        self.Score = sum(Score)/sum(weight)
+        print(self.Score)
 
     def EstimateThred(self,lr=0.001, save_name = 'thredshold'):
         thred = np.zeros((self.Y.shape[1])) + 0.5
@@ -125,6 +146,22 @@ class GetThreshold():
             #print(thred)
             #用眼睛看到收斂為止
         np.save(save_name,thred)
+
+    def GenerateSubmission(self, thred_path = 'thredshold.npy'):
+        thred = np.load(thred_path)
+        label = np.where(self.Score>=thred[np.newaxis,:],1,0)
+        predicted = []
+        ID = self.DA['Id'].tolist()
+        for i in range(len(ID)):
+            ll = np.squeeze(np.argwhere(label[i,:]==1)).tolist()
+            if type(ll) is not list: ll = [ll]
+            if len(ll) == 0:
+                ll = [np.squeeze(np.argmax(self.Score[i,:])).tolist()]
+            str_predict_label = ' '.join(str(l) for l in ll)
+            predicted.append(str_predict_label)
+        self.DA['Predicted'] = predicted
+        self.DA.to_csv('submission.csv', index=False)
+
 
     @staticmethod
     def f1(y_true, y_pred):
@@ -150,22 +187,91 @@ class GetThreshold():
 
         f1 = 2*p*r / (p+r+np.finfo(float).eps)
         f1 = np.where(np.isnan(f1), np.zeros_like(f1), f1)
-        directection = np.where(np.mean(y_true - y_pred,axis = 0) > 0,-1,1)
+        directection = np.where(np.mean(y_true - y_pred, axis = 0) > 0,-1,1)
         error = (1 - f1) * directection
         return error
 
+    @staticmethod
+    def get_weighted_loss(weights):
+        def loss_fun(y_true, y_pred):
+            return K.mean(weights*K.binary_crossentropy(y_true, y_pred), axis=-1)
+        return loss_fun
 
 
 def main():
-    PATH_to_TRAINCSV=sys.argv[2]
-    PATH_to_TRAIN=sys.argv[1]
-    
-    GS = GetThreshold(sys.argv[3])
-    GS.GetY(PATH_to_TRAINCSV)
-    GS.GetScore(Train_path= PATH_to_TRAIN,
-        save_name = "Train_score")
-    GS.LoadScore("Train_score")
+    PATH_to_TRAINCSV="/mnt/e/ML_dataset/final/train.csv"
+    PATH_to_TRAIN="/mnt/e/ML_dataset/final/Train"
+    MODEL_PATH="/mnt/e/ML_dataset/final/"
+    model_list = ["myModeBestInceptionl.h5",
+        "myModelInceptionClassW.h5",
+        "model1ResNet.h5",
+        "myModelResNet3_18.h5",
+        "ResNet50Class.h5",
+        "myModelResClassW01_186.h5",
+        "myModelInceptionClassW10"
+        ]
+    ww = [0.39,0.35,0.37,0.37,0.38,0.36]
+    INPUT_SHAPE = (299,299,4)
+
+    GS = GetThreshold()
+    GS.GetY(PATH_to_TRAINCSV,TEST=False)
+    score_list = []
+    for model in model_list:
+        train_score_path = MODEL_PATH+model.replace(".h5","")
+        score_list.append(train_score_path)
+        
+        if model == "myModelResClassW01_186.h5" or model == "myModelInceptionClassW10.h5":
+            INPUT_SHAPE = (350,350,4)
+        else:
+            INPUT_SHAPE = (299,299,4)
+            
+        GS.loadModel(MODEL_PATH + model)
+        GS.GetScore(Train_path= PATH_to_TRAIN,
+            save_name = train_score_path,
+            INPUT_SHAPE = INPUT_SHAPE)
+            
+
+    #score_list.append("Train_score")
+    GS.LoadScore(save_name=score_list,weight = ww)
     GS.EstimateThred(lr = 0.001,save_name = 'thredshold')
+
+
+def Test():
+    PATH_to_TestCSV='/mnt/e/ML_dataset/final/sample_submission.csv'
+    PATH_to_Test='/mnt/e/ML_dataset/final/Test/'
+    MODEL_PATH="/mnt/e/ML_dataset/final/"
+    model_list = ["myModeBestInceptionl.h5",
+        "myModelInceptionClassW.h5",
+        "model1ResNet.h5",
+        "myModelResClassW01_186.h5",
+        "myModelResNet3_18.h5",
+        "ResNet50Class.h5",
+        "myModelInceptionClassW10"
+        ]
+    ww = [0.39,0.35,0.37,0.37,0.38,0.36]
+    INPUT_SHAPE = (299,299,4)
+
+    GS = GetThreshold()
+    GS.GetY(PATH_to_TestCSV)
+    score_list = []
+    for model in model_list:
+        train_score_path = MODEL_PATH+model.replace(".h5","")+"Test"
+        score_list.append(train_score_path)
+        if model == "myModelResClassW01_186.h5" or model == "myModelInceptionClassW10.h5":
+            INPUT_SHAPE = (350,350,4)
+        else:
+            INPUT_SHAPE = (299,299,4)
+        
+        GS.loadModel(MODEL_PATH + model)
+        GS.GetScore(Train_path= PATH_to_Test,
+            save_name = train_score_path,
+            INPUT_SHAPE = INPUT_SHAPE)
+            
+    #score_list.append("Test_score")
+    GS.LoadScore(score_list,weight = ww)
+    GS.GenerateSubmission()
+
 
 if __name__ == "__main__":
     main()
+    Test()
