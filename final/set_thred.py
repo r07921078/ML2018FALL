@@ -6,6 +6,7 @@ from PIL import Image
 import cv2
 from imgaug import augmenters as iaa
 from tqdm import tqdm
+from pathlib import Path
 
 import warnings
 
@@ -148,15 +149,15 @@ class GetThreshold():
         np.save(save_name,thred)
 
     def GenerateSubmission(self, thred_path = 'thredshold.npy'):
-        thred = np.load(thred_path)
-        label = np.where(self.Score>=thred[np.newaxis,:],1,0)
+        thred = np.load(thred_path)[np.newaxis,:]
+        label = np.where(self.Score>=thred,1,0)
         predicted = []
         ID = self.DA['Id'].tolist()
         for i in range(len(ID)):
             ll = np.squeeze(np.argwhere(label[i,:]==1)).tolist()
             if type(ll) is not list: ll = [ll]
             if len(ll) == 0:
-                ll = [np.squeeze(np.argmax(self.Score[i,:])).tolist()]
+                ll = [ np.squeeze(np.argmax(self.Score[i,:]-thred)).tolist() ]
             str_predict_label = ' '.join(str(l) for l in ll)
             predicted.append(str_predict_label)
         self.DA['Predicted'] = predicted
@@ -198,19 +199,10 @@ class GetThreshold():
         return loss_fun
 
 
-def main():
+def main(model_list,ww):
     PATH_to_TRAINCSV="/mnt/e/ML_dataset/final/train.csv"
     PATH_to_TRAIN="/mnt/e/ML_dataset/final/Train"
     MODEL_PATH="/mnt/e/ML_dataset/final/"
-    model_list = ["myModeBestInceptionl.h5",
-        "myModelInceptionClassW.h5",
-        "model1ResNet.h5",
-        "myModelResNet3_18.h5",
-        "ResNet50Class.h5",
-        "myModelResClassW01_186.h5",
-        "myModelInceptionClassW10"
-        ]
-    ww = [0.39,0.35,0.37,0.37,0.38,0.36]
     INPUT_SHAPE = (299,299,4)
 
     GS = GetThreshold()
@@ -224,7 +216,12 @@ def main():
             INPUT_SHAPE = (350,350,4)
         else:
             INPUT_SHAPE = (299,299,4)
-            
+        
+        print(train_score_path)
+        my_file = Path(train_score_path)
+        if my_file.exists():
+            continue
+
         GS.loadModel(MODEL_PATH + model)
         GS.GetScore(Train_path= PATH_to_TRAIN,
             save_name = train_score_path,
@@ -236,19 +233,10 @@ def main():
     GS.EstimateThred(lr = 0.001,save_name = 'thredshold')
 
 
-def Test():
+def Test(model_list,ww):
     PATH_to_TestCSV='/mnt/e/ML_dataset/final/sample_submission.csv'
     PATH_to_Test='/mnt/e/ML_dataset/final/Test/'
     MODEL_PATH="/mnt/e/ML_dataset/final/"
-    model_list = ["myModeBestInceptionl.h5",
-        "myModelInceptionClassW.h5",
-        "model1ResNet.h5",
-        "myModelResClassW01_186.h5",
-        "myModelResNet3_18.h5",
-        "ResNet50Class.h5",
-        "myModelInceptionClassW10"
-        ]
-    ww = [0.39,0.35,0.37,0.37,0.38,0.36]
     INPUT_SHAPE = (299,299,4)
 
     GS = GetThreshold()
@@ -261,7 +249,12 @@ def Test():
             INPUT_SHAPE = (350,350,4)
         else:
             INPUT_SHAPE = (299,299,4)
-        
+
+        print(train_score_path)
+        my_file = Path(train_score_path)
+        if my_file.exists():
+            continue
+
         GS.loadModel(MODEL_PATH + model)
         GS.GetScore(Train_path= PATH_to_Test,
             save_name = train_score_path,
@@ -273,5 +266,15 @@ def Test():
 
 
 if __name__ == "__main__":
-    main()
-    Test()
+    model_list = ["myModeBestInceptionl.h5",
+        "myModelInceptionClassW.h5",
+        "myModelResNet3_18.h5",
+        "ResNet50Class.h5",
+        "model1ResNet.h5",
+        "myModelResClassW01_186.h5",
+        "myModelInceptionClassW10.h5"
+        ]
+    ww = [0.39,0.35,0.37,0.38,0.35,0.36,0.395]
+
+    main(model_list,ww)
+    Test(model_list,ww)
