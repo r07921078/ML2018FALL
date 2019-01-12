@@ -15,8 +15,10 @@ INPUT_SHAPE = (299,299,4)
 BATCH_SIZE = 10 
 
 
-path_to_train = '/mnt/e/ML_dataset/final/Train'
-PATH_to_TRAINCSV="/mnt/e/ML_dataset/final/train.csv"
+path_to_train = sys.argv[1]#'/mnt/e/ML_dataset/final/Train'
+PATH_to_TRAINCSV=sys.argv[2]#"/mnt/e/ML_dataset/final/train.csv"
+save_name = sys.argv[0].replace("train_","")
+SAVE_NAME = save_name.replace("py","h5")
 
 data = pd.read_csv(PATH_to_TRAINCSV)
 
@@ -229,7 +231,7 @@ model.compile(
     metrics=['acc', f1])
 
 
-check  = ModelCheckpoint("/mnt/e/ML_dataset/final/myModel.h5",
+check  = ModelCheckpoint(SAVE_NAME,
     monitor='val_f1',
     save_best_only=True,
     mode = 'max')

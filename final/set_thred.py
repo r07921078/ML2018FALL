@@ -148,7 +148,7 @@ class GetThreshold():
             #用眼睛看到收斂為止
         np.save(save_name,thred)
 
-    def GenerateSubmission(self, thred_path = 'thredshold.npy'):
+    def GenerateSubmission(self, thred_path = 'thredshold.npy', save_file='submission.csv'):
         thred = np.load(thred_path)[np.newaxis,:]
         label = np.where(self.Score>=thred,1,0)
         predicted = []
@@ -161,7 +161,7 @@ class GetThreshold():
             str_predict_label = ' '.join(str(l) for l in ll)
             predicted.append(str_predict_label)
         self.DA['Predicted'] = predicted
-        self.DA.to_csv('submission.csv', index=False)
+        self.DA.to_csv(save_file, index=False)
 
 
     @staticmethod
@@ -199,10 +199,7 @@ class GetThreshold():
         return loss_fun
 
 
-def main(model_list,ww):
-    PATH_to_TRAINCSV="/mnt/e/ML_dataset/final/train.csv"
-    PATH_to_TRAIN="/mnt/e/ML_dataset/final/Train"
-    MODEL_PATH="/mnt/e/ML_dataset/final/"
+def main(model_list,ww,PATH_to_TRAINCSV,PATH_to_TRAIN,MODEL_PATH):
     INPUT_SHAPE = (299,299,4)
 
     GS = GetThreshold()
@@ -233,10 +230,7 @@ def main(model_list,ww):
     GS.EstimateThred(lr = 0.001,save_name = 'thredshold')
 
 
-def Test(model_list,ww):
-    PATH_to_TestCSV='/mnt/e/ML_dataset/final/sample_submission.csv'
-    PATH_to_Test='/mnt/e/ML_dataset/final/Test/'
-    MODEL_PATH="/mnt/e/ML_dataset/final/"
+def Test(model_list,ww,PATH_to_TestCSV,PATH_to_Test,MODEL_PATH,SAVE_NAME):
     INPUT_SHAPE = (299,299,4)
 
     GS = GetThreshold()
@@ -275,6 +269,16 @@ if __name__ == "__main__":
         "myModelInceptionClassW10.h5"
         ]
     ww = [0.39,0.35,0.37,0.38,0.35,0.36,0.395]
+    TrainScore=sys.argv[4] 
+    if TrainScore is True:
+        PATH_to_TRAINCSV=sys.argv[1]#"/mnt/e/ML_dataset/final/train.csv"
+        PATH_to_TRAIN=sys.argv[2]#"/mnt/e/ML_dataset/final/Train"
+        MODEL_PATH=sys.argv[3]#"/mnt/e/ML_dataset/final/"
+        main(model_list,ww,PATH_to_TRAINCSV,PATH_to_TRAIN,MODEL_PATH)
+    else:
+        PATH_to_TestCSV=sys.argv[1]#'/mnt/e/ML_dataset/final/sample_submission.csv'
+        PATH_to_Test=sys.argv[2]#'/mnt/e/ML_dataset/final/Test/'
+        MODEL_PATH=sys.argv[3]#"/mnt/e/ML_dataset/final/"
+        SAVE_NAME=sys.argv[5]
+        Test(model_list,ww,PATH_to_TestCSV,PATH_to_Test,MODEL_PATH,SAVE_NAME)
 
-    main(model_list,ww)
-    Test(model_list,ww)
