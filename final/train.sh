@@ -11,7 +11,7 @@ train_myModelResClassW01_186.py
 train_model1ResNet.py"
 CSV_PATH=$1 #"/mnt/e/ML_dataset/final/sample_submission.csv"
 FILE_PATH=$2 #'/mnt/e/ML_dataset/final/Test/'
-MODEL_PATH=''
+MODEL_PATH=$(pwd)"/"
 TrainScore="True"
 SAVE_FILE=$4 #"submission.csv"
 
