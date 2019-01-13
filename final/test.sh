@@ -11,7 +11,7 @@ wget -O myModelResClassW01_186.h5 https://www.dropbox.com/s/5mp9diffli68adg/myMo
 
 CSV_PATH=$1 #"/mnt/e/ML_dataset/final/train.csv"
 FILE_PATH=$2 #'/mnt/e/ML_dataset/final/Train'
-MODEL_PATH=''
+MODEL_PATH=$(pwd)"/"
 TrainScore="False"
 SAVE_FILE=$3 #"submission.csv"
 
